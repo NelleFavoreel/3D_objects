@@ -1,25 +1,36 @@
-import logo from './logo.svg';
-import './App.css';
+// src/App.js
+import "./App.css";
+import React, { useState } from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
+import UploadComponent from "./component/UploadComponent"; // Ensure this path is correct
+import ModelViewer from "./component/ModelViewer"; // Ensure this path is correct
+import ModelDetails from "./component/ModelDetails"; // Ensure this path is correct
 
 function App() {
-  return (
-    <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
-    </div>
-  );
+	const [uploadedFilePath, setUploadedFilePath] = useState(null);
+
+	const handleUpload = (filePath) => {
+		setUploadedFilePath(filePath);
+	};
+
+	return (
+		<Router>
+			<div className="App">
+				<h1>3D Object Uploader</h1>
+				<UploadComponent onUpload={handleUpload} />
+				{uploadedFilePath && (
+					<>
+						<p>Bestand geüpload naar: {uploadedFilePath}</p>
+						<ModelViewer modelPath={`http://localhost:5003/${uploadedFilePath}`} />
+					</>
+				)}
+			</div>
+			<Routes>
+				<Route path="/" element={<div>Welcome to the 3D Object Uploader</div>} />
+				<Route path="/ModelDetails" element={<ModelDetails />} />
+			</Routes>
+		</Router>
+	);
 }
 
 export default App;
