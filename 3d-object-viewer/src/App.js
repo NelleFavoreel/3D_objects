@@ -21,12 +21,12 @@ function App() {
 				{uploadedFilePath && (
 					<>
 						<p>Bestand geüpload naar: {uploadedFilePath}</p>
-						<ModelViewer modelPath={`http://localhost:5003/${uploadedFilePath}`} />
+						<ModelViewer modelPath={`http://localhost:5003/uploads/${uploadedFilePath}`} />
 					</>
 				)}
 			</div>
 			<Routes>
-				<Route path="/" element={<div>Welcome to the 3D Object Uploader</div>} />
+				<Route path="/" element={<div></div>} />
 				<Route path="/ModelDetails" element={<ModelDetails />} />
 			</Routes>
 		</Router>
