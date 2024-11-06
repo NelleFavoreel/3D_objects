@@ -21,7 +21,7 @@ function App() {
 				{uploadedFilePath && (
 					<>
 						<p>Bestand geüpload naar: {uploadedFilePath}</p>
-						<ModelViewer modelPath={`http://localhost:5003/uploads/${uploadedFilePath}`} />
+						<ModelViewer modelPath={`http://localhost:5003/uploads/${uploadedFilePath}?t=${Date.now()}`} />
 					</>
 				)}
 			</div>

@@ -4,17 +4,20 @@ const cors = require("cors");
 const path = require("path");
 const fs = require("fs");
 const AdmZip = require("adm-zip");
-
+const unzipper = require("unzipper");
 const app = express();
 const port = 5003;
 
 // CORS middleware
 app.use(
 	cors({
-		origin: "http://localhost:3000",
+		origin: "http://localhost:3000", // Zorg ervoor dat je frontend goed is ingesteld
 	})
 );
 app.use(express.json());
+
+// Serve the uploads folder for static files (zorg dat bestanden toegankelijk zijn)
+app.use("/uploads", express.static("uploads"));
 
 // Set up multer for file uploads
 const storage = multer.diskStorage({
@@ -27,42 +30,81 @@ const storage = multer.diskStorage({
 });
 const upload = multer({ storage: storage });
 
-// Route for uploading ZIP files
-app.post("/upload", upload.single("file"), (req, res) => {
-	console.log("Received file upload request");
+// Functie om de uploads-map leeg te maken voordat je een nieuw bestand uploadt
+const clearUploadsFolder = () => {
+	const directory = path.join(__dirname, "uploads");
 
-	if (!req.file) {
-		console.log("No file uploaded.");
-		return res.status(400).json({ message: "No file uploaded." });
-	}
+	fs.readdir(directory, (err, files) => {
+		if (err) {
+			console.error(`Error reading directory: ${directory}`, err);
+			throw err;
+		}
 
-	const zipPath = path.join(__dirname, "uploads", req.file.filename);
-	const zip = new AdmZip(zipPath);
+		files.forEach((file) => {
+			const filePath = path.join(directory, file);
 
+			fs.stat(filePath, (err, stats) => {
+				if (err) {
+					console.log(`Error checking stats for ${filePath}: ${err}`);
+					return;
+				}
+
+				if (stats.isFile()) {
+					// Verwijder bestand als het bestaat
+					if (fs.existsSync(filePath)) {
+						fs.unlink(filePath, (err) => {
+							if (err) {
+								console.log(`Error deleting file: ${filePath}`, err);
+								throw err;
+							} else {
+								console.log(`File deleted: ${filePath}`);
+							}
+						});
+					} else {
+						console.log(`File not found for deletion: ${filePath}`);
+					}
+				} else if (stats.isDirectory()) {
+					// Verwijder directory als het bestaat (recursief)
+					if (fs.existsSync(filePath)) {
+						fs.rm(filePath, { recursive: true, force: true }, (err) => {
+							if (err) {
+								console.log(`Error deleting directory: ${filePath}`, err);
+								throw err;
+							} else {
+								console.log(`Directory deleted: ${filePath}`);
+							}
+						});
+					} else {
+						console.log(`Directory not found for deletion: ${filePath}`);
+					}
+				}
+			});
+		});
+	});
+};
+
+// Route voor het uploaden van ZIP-bestanden
+// Verander je server upload route zodat je de juiste bestandsnaam terugstuurt:
+app.post("/upload", upload.single("file"), async (req, res) => {
 	try {
-		// Extract files to the uploads folder
-		console.log("Extracting files...");
-		zip.extractAllTo(path.join(__dirname, "uploads"), true);
-		fs.unlinkSync(zipPath); // Verwijder het ZIP-bestand na extractie
+		const file = req.file;
+		if (!file) {
+			return res.status(400).send("No file uploaded.");
+		}
+		console.log("File uploaded:", file.originalname);
 
-		// Vind de .gltf-bestanden in de geëxtraheerde bestanden
-		const extractedFiles = fs.readdirSync(path.join(__dirname, "uploads"));
-		const gltfFileNames = extractedFiles.filter((file) => file.endsWith(".gltf"));
-
-		console.log("Extracted GLTF files:", gltfFileNames);
-
-		// Beantwoord met de lijst van .gltf-bestanden
-		res.json({ message: "Files uploaded and extracted successfully", files: gltfFileNames });
-	} catch (error) {
-		console.error("Error extracting ZIP file:", error);
-		res.status(500).json({ message: "Error extracting ZIP file.", error: error.message });
+		// Geef het pad van het bestand terug naar de frontend
+		res.json({
+			message: "Bestand succesvol geüpload",
+			filePath: file.filename, // Dit geeft het pad terug
+		});
+	} catch (err) {
+		console.error("Error uploading or extracting file:", err);
+		res.status(500).send("Error uploading or extracting file");
 	}
 });
 
-// Serve the uploads folder
-app.use("/uploads", express.static("uploads"));
-
-// Start the server
+// Start de server
 app.listen(port, () => {
 	console.log(`Server running on http://localhost:${port}`);
 });

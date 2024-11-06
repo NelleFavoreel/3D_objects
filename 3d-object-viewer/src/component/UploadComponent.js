@@ -6,7 +6,7 @@ function UploadComponent({ onUpload }) {
 	const handleUpload = async () => {
 		if (!file) return;
 		const formData = new FormData();
-		formData.append("file", file);
+		formData.append("file", file); // 'file' moet hetzelfde zijn als in de backend
 
 		const response = await fetch("http://localhost:5003/upload", {
 			method: "POST",
@@ -15,12 +15,10 @@ function UploadComponent({ onUpload }) {
 
 		if (response.ok) {
 			const data = await response.json();
-			// Als er meerdere bestanden zijn, selecteer het eerste bestand als standaard
-			if (data.files && data.files.length > 0) {
-				onUpload(data.files[0]); // Stuur het eerste .gltf-bestand naar de viewer
-			} else {
-				console.error("No GLTF files found in the uploaded ZIP.");
-			}
+			console.log(data); // Controleer de respons van de server
+
+			// Geef het pad van het bestand door naar de parent component via onUpload
+			onUpload(data.filePath); // Geef het pad van het bestand door
 		} else {
 			console.error("Upload failed:", response.statusText);
 		}
